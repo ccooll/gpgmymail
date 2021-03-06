@@ -33,25 +33,25 @@ yourself lucky...  Everything here probably contains mistake...
 3. Copy the python application gpgmymail to /usr/lib/dovecot/sieve-filter
 4. While you're there, create a "gnupg" folder
 5. Adjust ownership to :
-'''
+```
 drwx------ 3 mail      mail 4.0K Sep 14 11:06 gnupg
 -rwxr-xr-x 1 user-data root 3.8K Aug  7  2020 gpgmymail
-''' 
+``` 
    - We will come back here later, we will need to copy a gnupg keyring here, adjust the access rights.  Everything will need to be owned by mail:mail or gpg will complain
 6. Adjust the config of Dovecot
    - Edit /etc/dovecot/conf.d/90-sieve.conf  Here is what I have :
-'''
+```
 plugin {
   sieve = file:~/sieve;active=~/.dovecot.sieve
   sieve_extensions = +vnd.dovecot.filter
   sieve_plugins = sieve_extprograms
 }
-'''
+```
    - Edit /etc/dovecot/conf.d/90-sieve-extprograms.conf  Here is what I have:
-'''
+```
 plugin {
   sieve_filter_socket_dir = sieve-filter
   sieve_filter_bin_dir = /usr/lib/dovecot/sieve-filter
 }
-'''
+```
 
