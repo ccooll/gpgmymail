@@ -1,0 +1,116 @@
+#!/usr/bin/python3
+# Copyright 2019 Julian Andres Klode <jak@jak-linux.org>
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+"""Encrypt/Decrypt GPG/MIME messages.
+
+This tool can encrypt and decrypt emails using PGP/MIME. Decryption only
+works well for emails created with this tool. When encrypting, the tool
+preserves all headers in the original email in the encrypted part, and
+copies relevant headers to the output. When decrypting, any headers are
+ignored, and only the encrypted headers are restored.
+"""
+
+import argparse
+import sys
+import email.encoders
+import email.message
+import email.mime.application
+import email.mime.multipart
+import email.mime.message
+import typing
+import os
+
+import gpg  # type: ignore
+
+
+def encrypt(message: email.message.Message, recipients: typing.List[str]) -> str:
+    """Encrypt given message"""
+    # gpg = gpg.GPG(gnupghome="/home/user-data/.gnupg")
+
+
+    with gpg.Context(armor=True, home_dir = "/usr/lib/dovecot/sieve-filter/gnupg") as c:
+        # c.home_dir = "/usr/lib/dovecot/sieve-filter/gnupg"
+        # this is where the "dovecot / sieve gpg keyring" is located on the server
+        # It could be improved :/ ...
+        keys = []
+        for r in recipients:
+            keys += list(c.keylist(r))
+            print('This is the recipient : ' + str(r), file=sys.stderr )
+
+        encrypted_content, _res, _ = c.encrypt(message.as_bytes(), keys, sign=False, always_trust=True)
+        # always_trust was added to skip issues with not fully trusted keys...  it was:
+        # encrypted_content, _res, _ = c.encrypt(message.as_bytes(), keys, sign=False)
+    if not encrypted_content:
+        raise ValueError(encrypted_content.status)
+
+    # Build the parts
+    enc = email.mime.application.MIMEApplication(
+        _data=encrypted_content,
+        _subtype="octet-stream",
+        _encoder=email.encoders.encode_7or8bit,
+    )
+
+    control = email.mime.application.MIMEApplication(
+        _data=b"Version: 1\n",
+        _subtype='pgp-encrypted; name="msg.asc"',
+        _encoder=email.encoders.encode_7or8bit,
+    )
+    control["Content-Disposition"] = 'inline; filename="msg.asc"'
+
+    # Put the parts together
+    encmsg = email.mime.multipart.MIMEMultipart(
+        "encrypted", protocol="application/pgp-encrypted"
+    )
+    encmsg.attach(control)
+    encmsg.attach(enc)
+
+    # Copy headers
+    headers_not_to_override = {key.lower() for key in encmsg.keys()}
+
+    for key, value in message.items():
+        if key.lower() not in headers_not_to_override:
+            encmsg[key] = value
+
+    return encmsg.as_bytes()
+
+
+def decrypt(message: email.message.Message) -> str:
+    """Decrypt the given message"""
+    with gpg.Context(armor=True) as c:
+        content, _decrypt_res, _verify_res = c.decrypt(message.as_bytes())
+        return content
+
+
+def main() -> None:
+    # print('This is a test uid : ' + str(os.getuid()), file=sys.stderr )
+    """Program entry"""
+    parser = argparse.ArgumentParser(description="Encrypt/Decrypt mail using GPG/MIME")
+    parser.add_argument(
+        "-d", "--decrypt", action="store_true", help="Decrypt rather than encrypt"
+    )
+    parser.add_argument(
+        "recipient", nargs="*", help="key id or email of keys to encrypt for"
+    )
+    args = parser.parse_args()
+    msg = email.message_from_binary_file(sys.stdin.buffer)
+
+    if args.decrypt:
+        sys.stdout.buffer.write(decrypt(msg))
+    else:
+        sys.stdout.buffer.write(encrypt(msg, args.recipient))
+
+
+if __name__ == "__main__":
+    main()
