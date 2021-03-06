@@ -23,7 +23,7 @@ Well, if you read the blog post, you figured it out.  I am using iOS pEp app, bu
 First, this is a very dirty hack.  It works and I basically just stopped there.  I decided to leave my notes on Github, but if it works, just consider
 yourself lucky...  Everything here probably contains mistake...  
 
-** Before anything, you have to install mail-in-a-box (Miab) on your system. **
+**Before anything, you have to install mail-in-a-box (Miab) on your system.**
 
 ## Instructions, well, kindda...
 
@@ -54,4 +54,29 @@ plugin {
   sieve_filter_bin_dir = /usr/lib/dovecot/sieve-filter
 }
 ```
+
+7. This part is particulary ugly
+   - As root (I used "sudo su" for this part):
+```
+cd /usr/lib/dovecot/sieve-filter
+gpg --homedir=./gnupg --import YOUR_PUBKEY.asc
+gpg --homedir=./gnupg  --list-keys
+gpg --homedir=./gnupg  --edit-key YOUR_KEY_OR_EMAIL
+# Optional, I think, Adjust trust of your key to ultimate
+cd gnupg
+rm S.*
+chown mail:mail *
+```
+   - I am not sure if editing the trust is needed, as I modified the python code to disregard that part
+   - I then reloaded Dovecot
+```
+service dovecot restart
+```
+   - Then played with :
+```
+sieve-filter -v -C -u EMAIL@YOURDOMAIN.com /home/user-data/mail/sieve/PATH_TO_YOUR_roundcube.sieve 'INBOX'
+tail /var/log/syslog
+```
+   - Until it worked and found out what was not working...  Also sendind lots of emails ;)
+   - Hint : the "require" statement at the beggining of the sieve filters are important
 
