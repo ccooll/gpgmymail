@@ -1,0 +1,32 @@
+how would you add a default key to keys variable made from the list of recipients? 
+
+If you want to add a default key to the keys variable created from the list of recipients, you can simply append the default key to the keys list before using it in the encryption process. Here's how you can modify the encrypt function to include a default key:
+
+def encrypt(message: email.message.Message, recipients: typing.List[str], default_key: str) -> str:
+    with gpg.Context(armor=True, home_dir="/usr/lib/dovecot/sieve-filter/gnupg") as c:
+        keys = []
+        for r in recipients:
+            keys += list(c.keylist(r))
+            print('This is the recipient: ' + str(r), file=sys.stderr)
+
+        # Append the default key to the list of keys
+        keys.append(default_key)
+
+        encrypted_content, _res, _ = c.encrypt(message.as_bytes(), keys, sign=False, always_trust=True)
+    if not encrypted_content:
+        raise ValueError(encrypted_content.status)
+
+    # Use the encrypted content directly without MIME multipart
+    return encrypted_content
+
+
+Now, you can call the encrypt function with the list of recipients and the default key:
+
+
+default_key = 'your-default-key-id-or-email'
+sys.stdout.buffer.write(encrypt(msg, args.recipient, default_key))
+
+
+Replace 'your-default-key-id-or-email' with the actual key ID or email of the default key you want to use. This modification ensures that the default key is included in the list of keys used for encryption.
+
+

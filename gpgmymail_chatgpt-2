@@ -1,0 +1,59 @@
+import email
+import gnupg
+import imaplib
+import smtplib
+
+# Set your Dovecot IMAP and SMTP server details
+IMAP_SERVER = 'your-imap-server.com'
+SMTP_SERVER = 'your-smtp-server.com'
+USERNAME = 'your-username'
+PASSWORD = 'your-password'
+
+# Set the GPG key for encryption
+RECIPIENT_KEY = 'recipient-key-id'
+
+# Connect to IMAP server
+imap_conn = imaplib.IMAP4_SSL(IMAP_SERVER)
+imap_conn.login(USERNAME, PASSWORD)
+
+# Select the mailbox you want to monitor (e.g., 'INBOX')
+imap_conn.select('INBOX')
+
+# Search for all unseen messages
+status, messages = imap_conn.search(None, 'UNSEEN')
+if status == 'OK':
+    for num in messages[0].split():
+        # Fetch the email
+        status, msg_data = imap_conn.fetch(num, '(RFC822)')
+        if status == 'OK':
+            raw_email = msg_data[0][1]
+            msg = email.message_from_bytes(raw_email)
+
+            # Get the body of the email
+            if msg.is_multipart():
+                for part in msg.walk():
+                    if part.get_content_type() == 'text/plain':
+                        body = part.get_payload(decode=True).decode('utf-8')
+                        break
+            else:
+                body = msg.get_payload(decode=True).decode('utf-8')
+
+            # Encrypt the email body using GPG and ASCII armor
+            gpg = gnupg.GPG()
+            encrypted_data = gpg.encrypt(body, RECIPIENT_KEY, armor=True, always_trust=True)
+
+            # Create a new email with the encrypted content
+            encrypted_message = f"-----BEGIN PGP MESSAGE-----\n{encrypted_data}\n-----END PGP MESSAGE-----"
+
+            # Connect to SMTP server and send the encrypted email
+            with smtplib.SMTP(SMTP_SERVER) as smtp_conn:
+                smtp_conn.login(USERNAME, PASSWORD)
+                smtp_conn.sendmail('your-email@example.com', msg.get('From'), encrypted_message)
+
+            # Mark the email as read
+            imap_conn.store(num, '+FLAGS', '\Seen')
+
+# Close the IMAP connection
+imap_conn.close()
+imap_conn.logout()
+

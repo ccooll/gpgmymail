@@ -1,0 +1,29 @@
+import smtplib
+import gnupg
+
+# Set your SMTP server details
+SMTP_SERVER = 'your-smtp-server.com'
+USERNAME = 'your-username'
+PASSWORD = 'your-password'
+
+# Set the GPG key for encryption
+RECIPIENT_KEY = 'recipient-key-id'
+
+# Sample email body to be encrypted
+email_body = """
+This is the body of the email that you want to encrypt.
+You can replace this with the actual email body.
+"""
+
+# Encrypt the email body using GPG and ASCII armor
+gpg = gnupg.GPG()
+encrypted_data = gpg.encrypt(email_body, RECIPIENT_KEY, armor=True, always_trust=True)
+
+# Create a new email with the encrypted content
+encrypted_message = f"-----BEGIN PGP MESSAGE-----\n{encrypted_data}\n-----END PGP MESSAGE-----"
+
+# Connect to SMTP server and send the encrypted email
+with smtplib.SMTP(SMTP_SERVER) as smtp_conn:
+    smtp_conn.login(USERNAME, PASSWORD)
+    smtp_conn.sendmail('your-email@example.com', 'recipient@example.com', encrypted_message)
+

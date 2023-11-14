@@ -1,0 +1,49 @@
+import argparse
+import sys
+import email.message
+import email.mime.application
+import email.encoders
+import typing
+import os
+
+import gpg  # type: ignore
+
+def encrypt(message: email.message.Message, recipients: typing.List[str]) -> str:
+    with gpg.Context(armor=True, home_dir="/usr/lib/dovecot/sieve-filter/gnupg") as c:
+        keys = []
+        for r in recipients:
+            keys += list(c.keylist(r))
+            print('This is the recipient: ' + str(r), file=sys.stderr)
+
+        encrypted_content, _res, _ = c.encrypt(message.as_bytes(), keys, sign=False, always_trust=True)
+    if not encrypted_content:
+        raise ValueError(encrypted_content.status)
+
+    # Use the encrypted content directly without MIME multipart
+    return encrypted_content
+
+
+def decrypt(message: email.message.Message) -> str:
+    with gpg.Context(armor=True) as c:
+        content, _decrypt_res, _verify_res = c.decrypt(message.as_bytes())
+        return content
+
+def main() -> None:
+    parser = argparse.ArgumentParser(description="Encrypt/Decrypt mail using GPG/MIME")
+    parser.add_argument(
+        "-d", "--decrypt", action="store_true", help="Decrypt rather than encrypt"
+    )
+    parser.add_argument(
+        "recipient", nargs="*", help="key id or email of keys to encrypt for"
+    )
+    args = parser.parse_args()
+    msg = email.message_from_binary_file(sys.stdin.buffer)
+
+    if args.decrypt:
+        sys.stdout.buffer.write(decrypt(msg))
+    else:
+        sys.stdout.buffer.write(encrypt(msg, args.recipient))
+
+if __name__ == "__main__":
+    main()
+
