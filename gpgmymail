@@ -92,7 +92,7 @@ def encrypt(message: email.message.Message, recipients: typing.List[str]) -> str
     # encmsg.attach(enc)
 
     # Copy headers
-    headers_not_to_override = {key.lower() for key in encmsg.keys()}
+    headers_not_to_override = {key.lower() for key in enc.keys()}
 
     for key, value in message.items():
         if key.lower() not in headers_not_to_override:
