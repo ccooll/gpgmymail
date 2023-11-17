@@ -75,7 +75,7 @@ def encrypt(message: email.message.Message, recipients: typing.List[str]) -> str
 
     control = email.mime.application.MIMEApplication(
         _data=b"Version: 1\n",
-        _subtype='pgp-encrypted; name="msg.asc"',
+        _subtype='pgp-encrypted',
         _encoder=email.encoders.encode_7or8bit,
     )
     control["Content-Disposition"] = 'inline; filename="msg.asc"'
