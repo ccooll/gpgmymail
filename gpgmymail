@@ -67,27 +67,24 @@ def encrypt(message: email.message.Message, recipients: typing.List[str]) -> str
     # Encode the encrypted content using base64
     encoded_content = base64.b64encode(encrypted_content).decode()
 
-    # Create the MIME message
-    encmsg = MIMEMultipart("encrypted", _subtype="pgp-encrypted")
-    
-    # Add the control part
-    control_part = MIMEText("Version: 1")
-    control_part["Content-Disposition"] = 'inline; filename="msg.asc"'
-    encmsg.attach(control_part)
-
-    # Add the encrypted part
+    # Create the MIMEText part with the encoded content
     encrypted_part = MIMEText(encoded_content, _subtype="plain", _charset="utf-8")
     encrypted_part["Content-Disposition"] = 'inline; filename="encrypted.asc"'
-    encmsg.attach(encrypted_part)
+
+    # Create a new Message
+    encmsg = Message()
 
     # Copy headers
-    headers_not_to_override = {key.lower() for key in encmsg.keys()}
-
+    headers_not_to_override = {key.lower() for key in message.keys()}
     for key, value in message.items():
         if key.lower() not in headers_not_to_override:
             encmsg[key] = value
 
-    return encmsg.as_bytes(policy=policy.default)
+    # Set the body with the encrypted part
+    encmsg.set_payload(encrypted_part.get_payload())
+    encmsg.set_type("text/plain")
+
+    return encmsg.as_bytes()
 
 
 def decrypt(message: email.message.Message) -> str:
