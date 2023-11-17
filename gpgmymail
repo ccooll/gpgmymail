@@ -58,6 +58,9 @@ def encrypt(message: email.message.Message, recipients: typing.List[str]) -> str
     ## Use the encrypted content directly without MIME multipart
     # return encrypted_content
 
+    # Correct encoding
+    encoded_content = base64.b64encode(encrypted_content).decode()
+
     # Build the parts
 
     # enc = email.mime.application.MIMEApplication(
@@ -68,8 +71,8 @@ def encrypt(message: email.message.Message, recipients: typing.List[str]) -> str
     # enc["Content-Disposition"] = 'inline; filename="encrypted.asc"'
 	
     enc = email.mime.text.MIMEText(
-        _text=encrypted_content.decode(),
-        _subtype="pgp-encrypted",
+        _text=encrypted_content,
+        _subtype="plain",
         _charset="utf-8",
     )
     enc["Content-Disposition"] = 'inline; filename="encrypted.asc"'
