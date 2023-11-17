@@ -65,7 +65,7 @@ def encrypt(message: email.message.Message, recipients: typing.List[str]) -> str
         _subtype="octect-stream",
         _encoder=email.encoders.encode_7or8bit,
     )
-    enc["Content-Disposition"] = 'inline'
+    enc["Content-Disposition"] = 'inline; filename="encrypted.asc"'
 	
     # enc = email.mime.text.MIMEText(
     #     _text=encrypted_content.decode(),
@@ -78,7 +78,7 @@ def encrypt(message: email.message.Message, recipients: typing.List[str]) -> str
         _subtype='pgp-encrypted',
         _encoder=email.encoders.encode_7or8bit,
     )
-    control["Content-Disposition"] = 'inline'
+    control["Content-Disposition"] = 'inline; filename="msg.asc"'
 
     # Put the parts together
     encmsg = email.mime.multipart.MIMEMultipart(
