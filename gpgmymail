@@ -55,10 +55,11 @@ def encrypt(message: email.message.Message, recipients: typing.List[str]) -> str
     if not encrypted_content:
         raise ValueError(encrypted_content.status)
 
-    # Use the encrypted content directly without MIME multipart
-    return encrypted_content
+    ## Use the encrypted content directly without MIME multipart
+    # return encrypted_content
 
-    # # Build the parts
+    # Build the parts
+
     # enc = email.mime.application.MIMEApplication(
     #     _data=encrypted_content,
     #     _subtype='pgp-encrypted; name="encrypted.asc"',
@@ -66,28 +67,34 @@ def encrypt(message: email.message.Message, recipients: typing.List[str]) -> str
     # )
     # enc["Content-Disposition"] = 'inline; filename="encrypted.asc"'
 	
-    # control = email.mime.application.MIMEApplication(
-    #     _data=b"Version: 1\n",
-    #     _subtype='pgp-encrypted; name="msg.asc"',
-    #     _encoder=email.encoders.encode_7or8bit,
-    # )
-    # control["Content-Disposition"] = 'inline; filename="msg.asc"'
+    enc = email.mime.text.MIMEText(
+        _text=encrypted_content.decode(),
+        _subtype="encrypted",
+        _charset="utf-8",
+    )
 
-    # # Put the parts together
-    # encmsg = email.mime.multipart.MIMEMultipart(
-    #     "encrypted", protocol="application/pgp-encrypted"
-    # )
-    # encmsg.attach(control)
-    # encmsg.attach(enc)
+    control = email.mime.application.MIMEApplication(
+        _data=b"Version: 1\n",
+        _subtype='pgp-encrypted; name="msg.asc"',
+        _encoder=email.encoders.encode_7or8bit,
+    )
+    control["Content-Disposition"] = 'inline; filename="msg.asc"'
 
-    # # Copy headers
-    # headers_not_to_override = {key.lower() for key in encmsg.keys()}
+    # Put the parts together
+    encmsg = email.mime.multipart.MIMEMultipart(
+        "encrypted", protocol="application/pgp-encrypted"
+    )
+    encmsg.attach(control)
+    encmsg.attach(enc)
 
-    # for key, value in message.items():
-    #     if key.lower() not in headers_not_to_override:
-    #         encmsg[key] = value
+    # Copy headers
+    headers_not_to_override = {key.lower() for key in encmsg.keys()}
 
-    # return encmsg.as_bytes()
+    for key, value in message.items():
+        if key.lower() not in headers_not_to_override:
+            encmsg[key] = value
+
+    return encmsg.as_bytes()
 
 
 def decrypt(message: email.message.Message) -> str:
