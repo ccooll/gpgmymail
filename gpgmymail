@@ -31,6 +31,7 @@ import email.mime.multipart
 import email.mime.message
 import typing
 import os
+import base64
 
 import gpg  # type: ignore
 
