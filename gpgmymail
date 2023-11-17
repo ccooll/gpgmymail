@@ -27,8 +27,8 @@ import sys
 import email.encoders
 import email.message
 import email.mime.application
-# import email.mime.multipart
-# import email.mime.message
+import email.mime.multipart
+import email.mime.message
 import typing
 import os
 
