@@ -35,6 +35,11 @@ import base64
 
 import gpg  # type: ignore
 
+from email import policy
+from email.message import Message
+from email.mime.multipart import MIMEMultipart
+from email.mime.text import MIMEText
+
 
 def encrypt(message: email.message.Message, recipients: typing.List[str]) -> str:
     """Encrypt given message"""
@@ -59,48 +64,30 @@ def encrypt(message: email.message.Message, recipients: typing.List[str]) -> str
     ## Use the encrypted content directly without MIME multipart
     # return encrypted_content
 
-    # Correct encoding
+    # Encode the encrypted content using base64
     encoded_content = base64.b64encode(encrypted_content).decode()
 
-    # Build the parts
+    # Create the MIME message
+    encmsg = MIMEMultipart("encrypted", _subtype="pgp-encrypted")
+    
+    # Add the control part
+    control_part = MIMEText("Version: 1")
+    control_part["Content-Disposition"] = 'inline; filename="msg.asc"'
+    encmsg.attach(control_part)
 
-    # enc = email.mime.application.MIMEApplication(
-    #     _data=encrypted_content,
-    #     _subtype="octect-stream",
-    #     _encoder=email.encoders.encode_7or8bit,
-    # )
-    # enc["Content-Disposition"] = 'inline; filename="encrypted.asc"'
-	
-    enc = email.mime.text.MIMEText(
-        _text=encrypted_content,
-        _subtype="plain",
-        _charset="utf-8",
-    )
-    enc["Content-Disposition"] = 'inline; filename="encrypted.asc"'
-
-    # control = email.mime.application.MIMEApplication(
-    #     _data=b"Version: 1\n",
-    #     _subtype='pgp-encrypted',
-    #     _encoder=email.encoders.encode_7or8bit,
-    # )
-    # control["Content-Disposition"] = 'inline; filename="msg.asc"'
-
-    # Put the parts together
-    # encmsg = email.mime.multipart.MIMEMultipart(
-    #     "encrypted", protocol="application/pgp-encrypted"
-    # )
-    # encmsg.attach(control)
-    # encmsg.attach(enc)
+    # Add the encrypted part
+    encrypted_part = MIMEText(encoded_content, _subtype="plain", _charset="utf-8")
+    encrypted_part["Content-Disposition"] = 'inline; filename="encrypted.asc"'
+    encmsg.attach(encrypted_part)
 
     # Copy headers
-    headers_not_to_override = {key.lower() for key in enc.keys()}
+    headers_not_to_override = {key.lower() for key in encmsg.keys()}
 
     for key, value in message.items():
         if key.lower() not in headers_not_to_override:
-            enc[key] = value
-            # encmsg[key] = value
+            encmsg[key] = value
 
-    return enc.as_bytes()
+    return encmsg.as_bytes(policy=policy.default)
 
 
 def decrypt(message: email.message.Message) -> str:
