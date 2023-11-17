@@ -27,8 +27,8 @@ import sys
 import email.encoders
 import email.message
 import email.mime.application
-import email.mime.multipart
-import email.mime.message
+# import email.mime.multipart
+# import email.mime.message
 import typing
 import os
 
@@ -55,36 +55,39 @@ def encrypt(message: email.message.Message, recipients: typing.List[str]) -> str
     if not encrypted_content:
         raise ValueError(encrypted_content.status)
 
-    # Build the parts
-    enc = email.mime.application.MIMEApplication(
-        _data=encrypted_content,
-        _subtype='pgp-encrypted; name="encrypted.asc"',
-        _encoder=email.encoders.encode_7or8bit,
-    )
-    enc["Content-Disposition"] = 'inline; filename="encrypted.asc"'
+    # Use the encrypted content directly without MIME multipart
+    return encrypted_content
+
+    # # Build the parts
+    # enc = email.mime.application.MIMEApplication(
+    #     _data=encrypted_content,
+    #     _subtype='pgp-encrypted; name="encrypted.asc"',
+    #     _encoder=email.encoders.encode_7or8bit,
+    # )
+    # enc["Content-Disposition"] = 'inline; filename="encrypted.asc"'
 	
-    control = email.mime.application.MIMEApplication(
-        _data=b"Version: 1\n",
-        _subtype='pgp-encrypted; name="msg.asc"',
-        _encoder=email.encoders.encode_7or8bit,
-    )
-    control["Content-Disposition"] = 'inline; filename="msg.asc"'
+    # control = email.mime.application.MIMEApplication(
+    #     _data=b"Version: 1\n",
+    #     _subtype='pgp-encrypted; name="msg.asc"',
+    #     _encoder=email.encoders.encode_7or8bit,
+    # )
+    # control["Content-Disposition"] = 'inline; filename="msg.asc"'
 
-    # Put the parts together
-    encmsg = email.mime.multipart.MIMEMultipart(
-        "encrypted", protocol="application/pgp-encrypted"
-    )
-    encmsg.attach(control)
-    encmsg.attach(enc)
+    # # Put the parts together
+    # encmsg = email.mime.multipart.MIMEMultipart(
+    #     "encrypted", protocol="application/pgp-encrypted"
+    # )
+    # encmsg.attach(control)
+    # encmsg.attach(enc)
 
-    # Copy headers
-    headers_not_to_override = {key.lower() for key in encmsg.keys()}
+    # # Copy headers
+    # headers_not_to_override = {key.lower() for key in encmsg.keys()}
 
-    for key, value in message.items():
-        if key.lower() not in headers_not_to_override:
-            encmsg[key] = value
+    # for key, value in message.items():
+    #     if key.lower() not in headers_not_to_override:
+    #         encmsg[key] = value
 
-    return encmsg.as_bytes()
+    # return encmsg.as_bytes()
 
 
 def decrypt(message: email.message.Message) -> str:
@@ -97,7 +100,7 @@ def decrypt(message: email.message.Message) -> str:
 def main() -> None:
     # print('This is a test uid : ' + str(os.getuid()), file=sys.stderr )
     """Program entry"""
-    parser = argparse.ArgumentParser(description="Encrypt/Decrypt mail using GPG/MIME")
+    parser = argparse.ArgumentParser(description="Encrypt/Decrypt mail using GPG/MIME INLINE")
     parser.add_argument(
         "-d", "--decrypt", action="store_true", help="Decrypt rather than encrypt"
     )
