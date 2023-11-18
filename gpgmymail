@@ -57,10 +57,10 @@ def encrypt(message: email.message.Message, recipients: typing.List[str]) -> str
         raise ValueError(encrypted_content.status)
 
     ## Use the encrypted content directly without MIME multipart
-    # return encrypted_content
+    return encrypted_content
 
     # Correct encoding
-    encoded_content = base64.b64encode(encrypted_content).decode()
+    # encoded_content = base64.b64encode(encrypted_content).decode()
 
     # Build the parts
 
@@ -71,12 +71,12 @@ def encrypt(message: email.message.Message, recipients: typing.List[str]) -> str
     # )
     # enc["Content-Disposition"] = 'inline; filename="encrypted.asc"'
 	
-    enc = email.mime.text.MIMEText(
-        _text=encrypted_content,
-        _subtype="plain",
-        _charset="utf-8",
-    )
-    enc["Content-Disposition"] = 'inline; filename="encrypted.asc"'
+    # enc = email.mime.text.MIMEText(
+    #     _text=encrypted_content,
+    #     _subtype="plain",
+    #     _charset="utf-8",
+    # )
+    # enc["Content-Disposition"] = 'inline; filename="encrypted.asc"'
 
     # control = email.mime.application.MIMEApplication(
     #     _data=b"Version: 1\n",
@@ -93,14 +93,14 @@ def encrypt(message: email.message.Message, recipients: typing.List[str]) -> str
     # encmsg.attach(enc)
 
     # Copy headers
-    headers_not_to_override = {key.lower() for key in enc.keys()}
+    # headers_not_to_override = {key.lower() for key in enc.keys()}
 
-    for key, value in message.items():
-        if key.lower() not in headers_not_to_override:
-            enc[key] = value
-            # encmsg[key] = value
+    # for key, value in message.items():
+    #     if key.lower() not in headers_not_to_override:
+    #         enc[key] = value
+    #         # encmsg[key] = value
 
-    return enc.as_bytes()
+    # return enc.as_bytes()
 
 
 def decrypt(message: email.message.Message) -> str:
